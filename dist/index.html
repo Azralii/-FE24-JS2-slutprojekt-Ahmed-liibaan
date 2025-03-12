@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scrum Board</title>
+  <link rel="stylesheet" href="/index.c92073ef.css">
+</head>
+<body>
+  
+  <div id="app">
+    <h1>Scrum Projekt</h1>
+
+    <!-- Team Members - Lägg till nya team members -->
+    <section id="members-section">
+      <h2>Add New Team Member</h2>
+      <form id="new-member-form">
+        <div>
+          <label for="member-name">Name:</label>
+          <input type="text" id="member-name" placeholder="Member Name" required="">
+        </div>
+        <div>
+          <label for="member-roles">Select Roles (min 1, max 3):</label>
+          <select id="member-roles" multiple="" required="">
+            <option value="UX designer">UX Designer</option>
+            <option value="frontend developer">Frontend Developer</option>
+            <option value="backend developer">Backend Developer</option>
+          </select>
+        </div>
+        <button type="submit">Add Member</button>
+      </form>
+    </section>
+
+    <!-- Filtrering & Sortering -->
+    <section id="filter-section">
+      <h2>Filter & Sort</h2>
+
+      <div>
+        <label for="filter-status">Filter by status:</label>
+        <select id="filter-status">
+          <option value="all">All</option>
+          <option value="to-do">To Do</option>
+          <option value="in-progress">In Progress</option>
+          <option value="done">Done</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="filter-assigned">Filter by assignee:</label>
+        <select id="filter-assigned">
+          <option value="all">All</option>
+          <option value="Liibaan">Liibaan</option>
+          <option value="Ahmed">Ahmed</option>
+          <option value="Ali">Ali</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="filter-category">Filter by category:</label>
+        <select id="filter-category">
+          <option value="all">All</option>
+          <option value="UX">UX</option>
+          <option value="Frontend">Frontend</option>
+          <option value="Backend">Backend</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="sort-by">Sort by:</label>
+        <select id="sort-by">
+          <option value="title-asc">Title A-Z</option>
+          <option value="title-desc">Title Z-A</option>
+          <option value="timestamp-newest">Newest First</option>
+          <option value="timestamp-oldest">Oldest First</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- Formulär för att skapa nya uppgifter -->
+    <section id="task-form-section">
+      <h2>Create New Task</h2>
+      <form id="new-task-form">
+        <div>
+          <label for="task-title">Title:</label>
+          <input type="text" id="task-title" placeholder="Task Title" required="">
+        </div>
+        <div>
+          <label for="task-description">Description:</label>
+          <textarea id="task-description" placeholder="Task Description" required=""></textarea>
+        </div>
+        <div>
+          <label for="task-status">Status:</label>
+          <select id="task-status">
+            <option value="to-do">To Do</option>
+            <option value="in-progress">In Progress</option>
+            <option value="done">Done</option>
+          </select>
+        </div>
+        <div>
+          <label for="task-assigned">Assigned to:</label>
+          <input type="text" id="task-assigned" placeholder="Assignee Name" required="">
+        </div>
+        <div>
+          <label for="task-category">Category:</label>
+          <select id="task-category" required="">
+            <option value="UX">UX</option>
+            <option value="Frontend">Frontend</option>
+            <option value="Backend">Backend</option>
+          </select>
+        </div>
+        <button type="submit">Add Task</button>
+      </form>
+    </section>
+
+    <!-- Scrum Board med tre kolumner -->
+    <section id="board-section">
+      <h2>Scrum Board</h2>
+      <div class="board">
+        <div id="tasks-to-do" class="column">
+          <h3>To Do</h3>
+        </div>
+        <div id="tasks-in-progress" class="column">
+          <h3>In Progress</h3>
+        </div>
+        <div id="tasks-done" class="column">
+          <h3>Done</h3>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="/index.b7a05eb9.js" defer=""></script>
+</body>
+</html>

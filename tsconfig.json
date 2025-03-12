@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES6",
+    "module": "ESNext",
+    "moduleResolution": "node",  // Viktig inställning för modulupplösning
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist",
+    "rootDir": "src",  // Se till att detta är korrekt
+    "resolveJsonModule": true
+  },
+  "include": ["src/**/*.ts", "src/ui.ts", "src/main.ts", "src/main.ts"],  // Inkludera alla TS-filer i src-mappen
+  "exclude": ["node_modules"]
+}
