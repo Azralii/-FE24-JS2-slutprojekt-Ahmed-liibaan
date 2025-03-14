@@ -37,7 +37,6 @@ export async function loadBoard(): Promise<void> {
   }
 
   console.log("Filtered & sorted tasks:", tasks);
-
   renderTasks(tasks);
 }
 
@@ -85,7 +84,7 @@ function createTaskElement(task: Task): HTMLDivElement {
       <button class="move-right">➡️</button>
       ${task.status === "done" ? `<button class="delete">🗑️</button>` : ""}
       ${
-        task.status !== "done" && task.assignedTo && task.assignedTo !== "Ingen" 
+        task.status === "in-progress" && task.assignedTo && task.assignedTo !== "Ingen" 
           ? `<button class="done-btn">✔️ Markera som klar</button>` 
           : ""
       }
@@ -101,12 +100,10 @@ function createTaskElement(task: Task): HTMLDivElement {
   moveLeftButton?.addEventListener("click", () => moveTask(task, "left"));
   moveRightButton?.addEventListener("click", () => moveTask(task, "right"));
 
-  // "Ta bort"-knappen hanteras endast om uppgiften är "done"
   if (deleteButton) {
     deleteButton.addEventListener("click", () => handleDeleteTask(task.id));
   }
 
-  // Hantera markering av uppgift som klar
   if (doneButton) {
     doneButton.addEventListener("click", () => markTaskAsDone(task));
   }
@@ -131,7 +128,7 @@ async function moveTask(task: Task, direction: "left" | "right") {
   loadBoard();
 }
 
-// Markera uppgiften som "done" endast om tilldelad till en teammedlem
+// Markera uppgiften som "done" endast om den är i "in-progress"
 async function markTaskAsDone(task: Task) {
   if (!task.assignedTo || task.assignedTo === "Ingen") {
     alert("Denna uppgift kan inte markeras som klar eftersom den inte är tilldelad en teammedlem.");
@@ -140,7 +137,7 @@ async function markTaskAsDone(task: Task) {
 
   task.status = "done";
   await updateTask(task.id, { status: task.status });
-  loadBoard(); // Återrendera uppgifter för att uppdatera listorna
+  loadBoard();
 }
 
 // Tar bort en uppgift
