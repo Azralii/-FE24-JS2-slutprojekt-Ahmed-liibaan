@@ -142,7 +142,7 @@ async function handleAddNewTask(event: Event) {
   (document.getElementById("new-task-form") as HTMLFormElement)?.reset();
 }
 
-// Simulerad funktion för att hämta alla teammedlemmar (ersätt med din egen logik om du hämtar från en databas)
+// Simulerad funktion för att hämta alla teammedlemmar 
 async function getTeamMembers(): Promise<TeamMember[]> {
   return [
     { id: "1", name: "Liibaan", roles: ["frontend", "UX"] },
