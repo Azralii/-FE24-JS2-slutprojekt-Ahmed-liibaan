@@ -72,11 +72,26 @@ function createTaskElement(task: Task): HTMLDivElement {
   taskDiv.draggable = true;
   taskDiv.dataset.taskId = task.id;
 
+  let assignedToHTML = `<p><strong>Assigned to:</strong> ${task.assignedTo}</p>`;
+
+  // Om uppgiften är i "to-do", visa en dropdown för att välja ansvarig person
+  if (task.status === "to-do") {
+    assignedToHTML = `
+      <label for="assign-${task.id}"><strong>Assign to:</strong></label>
+      <select id="assign-${task.id}" class="assign-dropdown">
+        <option value="">Välj en person</option>
+        <option value="Liibaan">Liibaan</option>
+        <option value="Ali">Ali</option>
+        <option value="Ahmed">Ahmed</option>
+      </select>
+    `;
+  }
+
   // Skapa HTML-struktur för uppgiften
   taskDiv.innerHTML = `
     <h3>${task.title}</h3>
     <p>${task.description}</p>
-    <p><strong>Assigned to:</strong> ${task.assignedTo}</p>
+    ${assignedToHTML}
     <p><strong>Category:</strong> ${task.category}</p>
     <p><strong>Created:</strong> ${new Date(task.date).toLocaleString()}</p>
     <div class="task-actions">
@@ -84,8 +99,8 @@ function createTaskElement(task: Task): HTMLDivElement {
       <button class="move-right">➡️</button>
       ${task.status === "done" ? `<button class="delete">🗑️</button>` : ""}
       ${
-        task.status === "in-progress" && task.assignedTo && task.assignedTo !== "Ingen" 
-          ? `<button class="done-btn">✔️ Markera som klar</button>` 
+        task.status === "in-progress" && task.assignedTo && task.assignedTo !== "Ingen"
+          ? `<button class="done-btn">✔️ Markera som klar</button>`
           : ""
       }
     </div>
@@ -96,6 +111,7 @@ function createTaskElement(task: Task): HTMLDivElement {
   const moveRightButton = taskDiv.querySelector(".move-right") as HTMLButtonElement;
   const deleteButton = taskDiv.querySelector(".delete") as HTMLButtonElement;
   const doneButton = taskDiv.querySelector(".done-btn") as HTMLButtonElement;
+  const assignDropdown = taskDiv.querySelector(".assign-dropdown") as HTMLSelectElement;
 
   moveLeftButton?.addEventListener("click", () => moveTask(task, "left"));
   moveRightButton?.addEventListener("click", () => moveTask(task, "right"));
@@ -106,6 +122,19 @@ function createTaskElement(task: Task): HTMLDivElement {
 
   if (doneButton) {
     doneButton.addEventListener("click", () => markTaskAsDone(task));
+  }
+
+  // Hantera när en person väljs från dropdown-menyn
+  if (assignDropdown) {
+    assignDropdown.addEventListener("change", async (event) => {
+      const selectedPerson = (event.target as HTMLSelectElement).value;
+      if (selectedPerson) {
+        task.assignedTo = selectedPerson;
+        task.status = "in-progress"; // Flytta till "in-progress"
+        await updateTask(task.id, { assignedTo: selectedPerson, status: "in-progress" });
+        loadBoard();
+      }
+    });
   }
 
   return taskDiv;
