@@ -40,33 +40,26 @@ export async function loadBoard(): Promise<void> {
 
   console.log("Filtered & sorted tasks:", tasks);
 
-  renderTasks(tasks);
+  renderInProgressTasks(tasks);
 }
 
-
-// Renderar uppgifter i respektive kolumn
-export function renderTasks(tasks: Task[]): void {
-  const todoContainer = document.getElementById("tasks-to-do");
+// Renderar uppgifter med statusen "in-progress"
+export function renderInProgressTasks(tasks: Task[]): void {
   const inProgressContainer = document.getElementById("tasks-in-progress");
-  const doneContainer = document.getElementById("tasks-done");
 
-  if (!todoContainer || !inProgressContainer || !doneContainer) return;
+  if (!inProgressContainer) return;
 
-  // Töm innehållet i kolumnerna
-  todoContainer.innerHTML = "";
+  // Töm innehållet i kolumnen för "in-progress"
   inProgressContainer.innerHTML = "";
-  doneContainer.innerHTML = "";
 
-  // Loopar över alla uppgifter och lägger till dem i rätt kolumn
+  // Loopar över alla uppgifter och lägger till de som är "in-progress"
   tasks.forEach((task) => {
-    const taskElement = createTaskElement(task);
-
-    if (task.status === "to-do") {
-      todoContainer.appendChild(taskElement);
-    } else if (task.status === "in-progress") {
+    if (task.status === "in-progress") {
+      const taskElement = createTaskElement(task);
       inProgressContainer.appendChild(taskElement);
-    } else if (task.status === "done") {
-      doneContainer.appendChild(taskElement);
+
+      // Lägg till en klickhändelse för att flytta uppgiften till "done"
+      taskElement.addEventListener("click", () => moveToDone(task));
     }
   });
 }
@@ -85,51 +78,18 @@ function createTaskElement(task: Task): HTMLDivElement {
     <p><strong>Assigned to:</strong> ${task.assignedTo}</p>
     <p><strong>Category:</strong> ${task.category}</p>
     <p><strong>Created:</strong> ${new Date(task.date).toLocaleString()}</p>
-    <div class="task-actions">
-      ${
-        task.status === "done" // Visa knappar bara om status är "done"
-          ? `<button class="done-btn">✔️ Markera som klar</button>
-             <button class="delete">🗑️ Ta bort</button>`
-          : "" // Om inte "done", visa inga knappar
-      }
-    </div>
   `;
-
-  // Lägg till event listeners för knapparna
-  const deleteButton = taskDiv.querySelector(".delete") as HTMLButtonElement;
-  const doneButton = taskDiv.querySelector(".done-btn") as HTMLButtonElement;
-
-  // Ta bort-knappen visas endast om uppgiften är "done"
-  if (deleteButton) {
-    deleteButton.addEventListener("click", () => handleDeleteTask(task.id));
-  }
-
-  // Markera uppgiften som "done" när användaren klickar på "✔️ Markera som klar"
-  if (doneButton) {
-    doneButton.addEventListener("click", () => markTaskAsDone(task));
-  }
 
   return taskDiv;
 }
 
-// Markera uppgiften som "done" endast om den är tilldelad till en teammedlem
-async function markTaskAsDone(task: Task) {
-  if (!task.assignedTo || task.assignedTo === "Ingen") {
-    alert("Denna uppgift kan inte markeras som klar eftersom den inte är tilldelad en teammedlem.");
-    return;
-  }
-
+// Flytta uppgiften till "done" när den klickas
+async function moveToDone(task: Task): Promise<void> {
+  // Uppdatera uppgiftens status till "done"
   task.status = "done";
   await updateTask(task.id, { status: task.status });
-  loadBoard(); // Återrendera uppgifter för att uppdatera listorna
-}
 
-// Tar bort en uppgift
-async function handleDeleteTask(taskId: string) {
-  const confirmDelete = confirm("Är du säker på att du vill ta bort denna uppgift?");
-  if (!confirmDelete) return;
-
-  await deleteTask(taskId);
+  // Återrendera boarden så att uppgiften flyttas till rätt kolumn
   loadBoard();
 }
 
