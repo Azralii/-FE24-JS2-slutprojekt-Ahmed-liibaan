@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="/index.c92073ef.css">
 </head>
 <body>
-  
   <div id="app">
     <h1>Scrum Projekt</h1>
 
@@ -22,9 +21,9 @@
         <div>
           <label for="member-roles">Select Roles (min 1, max 3):</label>
           <select id="member-roles" multiple="" required="">
-            <option value="UX designer">UX Designer</option>
-            <option value="frontend developer">Frontend Developer</option>
-            <option value="backend developer">Backend Developer</option>
+            <option value="UX">UX Designer</option>
+            <option value="Frontend">Frontend Developer</option>
+            <option value="Backend">Backend Developer</option>
           </select>
         </div>
         <button type="submit">Add Member</button>
@@ -59,19 +58,19 @@
         <label for="filter-category">Filter by category:</label>
         <select id="filter-category">
           <option value="all">All</option>
-          <option value="UX">UX</option>
-          <option value="Frontend">Frontend</option>
-          <option value="Backend">Backend</option>
+          <option value="UX">UX Designer</option>
+          <option value="frontend">Frontend Developer</option>
+          <option value="backend">Backend Developer</option>
         </select>
       </div>
 
       <div>
         <label for="sort-by">Sort by:</label>
         <select id="sort-by">
-          <option value="title-asc">Title A-Z</option>
-          <option value="title-desc">Title Z-A</option>
-          <option value="timestamp-newest">Newest First</option>
-          <option value="timestamp-oldest">Oldest First</option>
+          <option value="timestamp-newest">Senaste först</option>
+          <option value="timestamp-oldest">Äldsta först</option>
+          <option value="title-ascending">A-Z</option>
+          <option value="title-descending">Z-A</option>
         </select>
       </div>
     </section>
@@ -103,9 +102,9 @@
         <div>
           <label for="task-category">Category:</label>
           <select id="task-category" required="">
-            <option value="UX">UX</option>
-            <option value="Frontend">Frontend</option>
-            <option value="Backend">Backend</option>
+            <option value="UX">UX Designer</option>
+            <option value="frontend">Frontend Developer</option>
+            <option value="backend">Backend Developer</option>
           </select>
         </div>
         <button type="submit">Add Task</button>
@@ -131,4 +130,7 @@
 
   <script src="/index.b7a05eb9.js" defer=""></script>
 </body>
+
+  <script src="/index.b7a05eb9.js" defer=""></script>
+
 </html>

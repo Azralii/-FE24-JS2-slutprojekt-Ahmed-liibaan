@@ -4,28 +4,28 @@ import { loadBoard } from "./modules/board";
 import { TeamMember, Task } from "./types";
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Ladda boarden och tasks
   loadBoard();
 
-  // Hantera formulär för att skapa nya tasks
   const taskForm = document.getElementById("new-task-form") as HTMLFormElement | null;
   taskForm?.addEventListener("submit", handleAddNewTask);
 
-  // Hantera formulär för att skapa nya team members
   const memberForm = document.getElementById("new-member-form") as HTMLFormElement | null;
   memberForm?.addEventListener("submit", handleAddNewMember);
 
-  // Lyssna på filtrering & sortering
   setupEventListener("filter-status", loadBoard);
   setupEventListener("filter-assigned", loadBoard);
   setupEventListener("sort-by", loadBoard);
 });
 
-// Existerande hjälpfunktioner
 function setupEventListener(elementId: string, callback: () => void) {
   const element = document.getElementById(elementId) as HTMLSelectElement | null;
   if (element) {
-    element.addEventListener("change", callback);
+    element.addEventListener("change", () => {
+      console.log(`${elementId} ändrades!`); // ✅ Logga när dropdown ändras
+      callback();
+    });
+  } else {
+    console.warn(`⚠️ Element med ID "${elementId}" hittades inte!`);
   }
 }
 
@@ -41,7 +41,7 @@ function getSelectValue(id: string): string | null {
   return (document.getElementById(id) as HTMLSelectElement | null)?.value || null;
 }
 
-// Funktion för att hantera att lägga till en ny team member
+// Hantera att lägga till en ny team member
 async function handleAddNewMember(event: Event) {
   event.preventDefault();
 
@@ -49,41 +49,47 @@ async function handleAddNewMember(event: Event) {
   const rolesSelect = document.getElementById("member-roles") as HTMLSelectElement | null;
 
   if (!name || !rolesSelect) {
-    console.error("Alla fält måste fyllas i!");
     alert("Alla fält måste fyllas i!");
     return;
   }
 
-  // Hämta valda roller (multiple)
   const selectedRoles: string[] = Array.from(rolesSelect.selectedOptions).map(option => option.value);
 
-  // Validate roles
-  const validRoles = ["UX designer", "frontend developer", "backend developer"];
-  const invalidRoles = selectedRoles.filter(role => !validRoles.includes(role));
-  
+  // Definiera de giltiga rollerna (alla små bokstäver)
+  const validRoles = ["ux", "frontend", "backend"];
+
+  // Filtrera bort ogiltiga roller, gör både de valda rollerna och de giltiga rollerna små bokstäver
+  const invalidRoles = selectedRoles.filter(role => !validRoles.includes(role.toLowerCase()));
+
   if (invalidRoles.length > 0) {
     alert("Ogiltig roll vald: " + invalidRoles.join(", "));
     return;
   }
 
   if (selectedRoles.length < 1 || selectedRoles.length > 3) {
-    alert("Välj minst 1 och max 3 roller för teammedlemmen.");
+    alert("Välj minst 1 och max 3 roller.");
     return;
   }
 
+  // Omvandla rollerna till korrekt typ ("UX", "frontend", "backend") innan vi skapar medlemmet
   const newMember: TeamMember = {
-    id: "", // ID skapas av Firebase
+    id: "",
     name,
-    roles: selectedRoles as ("UX designer" | "frontend developer" | "backend developer")[]
+    roles: selectedRoles.map(role => {
+      const roleLower = role.toLowerCase();
+      if (roleLower === "ux") return "UX";  // Vi säkerställer att det är "UX" med stora bokstäver
+      if (roleLower === "frontend") return "frontend";  // Vi håller det som "frontend"
+      if (roleLower === "backend") return "backend";  // Vi håller det som "backend"
+      return role; // Detta borde inte inträffa om validering sker korrekt
+    }) as ("UX" | "frontend" | "backend")[]  // Tvinga om typen här
   };
 
   await createTeamMember(newMember);
   alert("Team member added successfully!");
-
   (document.getElementById("new-member-form") as HTMLFormElement)?.reset();
 }
 
-// Funktion för att hantera att lägga till en ny task
+// Hantera att lägga till en ny task
 async function handleAddNewTask(event: Event) {
   event.preventDefault();
 
@@ -91,37 +97,56 @@ async function handleAddNewTask(event: Event) {
   const description = getTextAreaValue("task-description");
   const status = getSelectValue("task-status");
   const assignedTo = getInputValue("task-assigned");
-  const category = getSelectValue("task-category");  // Get category from the form
+  const category = getSelectValue("task-category");
 
   if (!title || !description || !status || !assignedTo || !category) {
-    console.error("Alla fält måste fyllas i!");
     alert("Alla fält måste fyllas i!");
     return;
   }
 
-  // Trimma och konvertera kategori till små bokstäver
-  const categoryTrimmed = category?.trim().toLowerCase();
+  // Hämta teammedlemmen för att kontrollera om de har rätt roll
+  const teamMembers = await getTeamMembers();  // Här kan du använda din egen funktion för att hämta medlemmarna från servern/databasen
+  const assignedMember = teamMembers.find(member => member.name === assignedTo);
 
-  // Definiera de giltiga kategorierna
-  const validCategories: ("UX" | "frontend" | "backend")[] = ["UX", "frontend", "backend"];
+  if (!assignedMember) {
+    alert("Denna teammedlem finns inte.");
+    return;
+  }
 
-  // Kontrollera om den valda kategorin är giltig
-  if (!validCategories.includes(categoryTrimmed as "UX" | "frontend" | "backend")) {
-    alert("Ogiltig kategori vald.");
+  // Kontrollera om medlemmen har rätt roll för uppgiftens kategori
+  if (category === "frontend" && !assignedMember.roles.includes("frontend")) {
+    alert("Denna uppgift kan inte tilldelas till denna teammedlem eftersom den inte är en frontend-utvecklare.");
+    return;
+  }
+  if (category === "backend" && !assignedMember.roles.includes("backend")) {
+    alert("Denna uppgift kan inte tilldelas till denna teammedlem eftersom den inte är en backend-utvecklare.");
+    return;
+  }
+  if (category === "UX" && !assignedMember.roles.includes("UX")) {
+    alert("Denna uppgift kan inte tilldelas till denna teammedlem eftersom den inte är en UX-designer.");
     return;
   }
 
   const newTask: Task = {
-    id: "", // ID skapas av Firebase när uppgiften skapas
+    id: "",
     title,
     description,
     status: status as "to-do" | "in-progress" | "done",
     assignedTo,
     date: new Date(),
-    category: category as "UX" | "frontend" | "backend" // Set the category field
+    category: category as "UX" | "frontend" | "backend"
   };
 
   await createTask(newTask);
   loadBoard();
   (document.getElementById("new-task-form") as HTMLFormElement)?.reset();
+}
+
+// Simulerad funktion för att hämta alla teammedlemmar (ersätt med din egen logik om du hämtar från en databas)
+async function getTeamMembers(): Promise<TeamMember[]> {
+  return [
+    { id: "1", name: "Liibaan", roles: ["frontend", "UX"] },
+    { id: "2", name: "Ali", roles: ["backend"] },
+    { id: "3", name: "Ahmed", roles: ["UX", "frontend"] },
+  ];
 }

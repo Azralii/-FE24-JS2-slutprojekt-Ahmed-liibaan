@@ -1,17 +1,40 @@
 import { onValue, push, ref, remove, update } from "firebase/database";
-import { db } from "../firebase";  // Firebase-konfigurationen
-import { Task } from "../types";  // Task-typen
+import { db } from "../firebase"; // Firebase-konfigurationen
+import { Task } from "../types"; // Task-typen
 
 /**
  * Hämta alla uppgifter från Realtime Database.
  */
 export function getTasks(): Promise<Task[]> {
   return new Promise((resolve) => {
-    onValue(ref(db, "/tasks"), (snapshot) => {
-      const data = snapshot.val();
-      const tasks = data ? Object.keys(data).map(id => ({ id, ...data[id] })) : [];
-      resolve(tasks);
-    }, { onlyOnce: true });
+    onValue(
+      ref(db, "/tasks"),
+      (snapshot) => {
+        const data = snapshot.val();
+        const tasks = data
+          ? Object.keys(data).map((id) => {
+              const task = { id, ...data[id] };
+
+              // Hantera datumformat
+              if (!task.date) {
+                console.warn(`Task ${id} saknar datum. Använder standardvärde.`);
+                task.date = new Date().toISOString();
+              } else if (typeof task.date === "number") {
+                task.date = new Date(task.date).toISOString();
+              } else if (task.date.toDate) {
+                task.date = task.date.toDate().toISOString();
+              } else {
+                console.error(`Ogiltigt datumformat för task ${id}:`, task.date);
+                task.date = new Date().toISOString();
+              }
+
+              return task;
+            })
+          : [];
+        resolve(tasks);
+      },
+      { onlyOnce: true }
+    );
   });
 }
 
@@ -20,14 +43,13 @@ export function getTasks(): Promise<Task[]> {
  */
 export async function createTask(task: Task): Promise<void> {
   const newTaskRef = push(ref(db, "/tasks"));
-  const taskId = newTaskRef.key; // Hämta det unika Firebase-ID:t
+  const taskId = newTaskRef.key;
 
   if (!taskId) {
     console.error("❌ Kunde inte skapa task-ID!");
     return;
   }
 
-  // Säkerställ att alla värden är korrekt definierade
   await update(newTaskRef, { ...task, id: taskId, date: Date.now() });
 }
 

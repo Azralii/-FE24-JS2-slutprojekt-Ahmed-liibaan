@@ -600,23 +600,22 @@ var _members = require("./modules/members");
 var _tasks = require("./modules/tasks");
 var _board = require("./modules/board");
 document.addEventListener("DOMContentLoaded", ()=>{
-    // Ladda boarden och tasks
     (0, _board.loadBoard)();
-    // Hantera formulär för att skapa nya tasks
     const taskForm = document.getElementById("new-task-form");
     taskForm?.addEventListener("submit", handleAddNewTask);
-    // Hantera formulär för att skapa nya team members
     const memberForm = document.getElementById("new-member-form");
     memberForm?.addEventListener("submit", handleAddNewMember);
-    // Lyssna på filtrering & sortering
     setupEventListener("filter-status", (0, _board.loadBoard));
     setupEventListener("filter-assigned", (0, _board.loadBoard));
     setupEventListener("sort-by", (0, _board.loadBoard));
 });
-// Existerande hjälpfunktioner
 function setupEventListener(elementId, callback) {
     const element = document.getElementById(elementId);
-    if (element) element.addEventListener("change", callback);
+    if (element) element.addEventListener("change", ()=>{
+        console.log(`${elementId} \xe4ndrades!`); // ✅ Logga när dropdown ändras
+        callback();
+    });
+    else console.warn(`\u{26A0}\u{FE0F} Element med ID "${elementId}" hittades inte!`);
 }
 function getInputValue(id) {
     return document.getElementById(id)?.value || null;
@@ -627,66 +626,78 @@ function getTextAreaValue(id) {
 function getSelectValue(id) {
     return document.getElementById(id)?.value || null;
 }
-// Funktion för att hantera att lägga till en ny team member
+// Hantera att lägga till en ny team member
 async function handleAddNewMember(event) {
     event.preventDefault();
     const name = getInputValue("member-name");
     const rolesSelect = document.getElementById("member-roles");
     if (!name || !rolesSelect) {
-        console.error("Alla f\xe4lt m\xe5ste fyllas i!");
         alert("Alla f\xe4lt m\xe5ste fyllas i!");
         return;
     }
-    // Hämta valda roller (multiple)
     const selectedRoles = Array.from(rolesSelect.selectedOptions).map((option)=>option.value);
-    // Validate roles
+    // Definiera de giltiga rollerna (alla små bokstäver)
     const validRoles = [
-        "UX designer",
-        "frontend developer",
-        "backend developer"
+        "ux",
+        "frontend",
+        "backend"
     ];
-    const invalidRoles = selectedRoles.filter((role)=>!validRoles.includes(role));
+    // Filtrera bort ogiltiga roller, gör både de valda rollerna och de giltiga rollerna små bokstäver
+    const invalidRoles = selectedRoles.filter((role)=>!validRoles.includes(role.toLowerCase()));
     if (invalidRoles.length > 0) {
         alert("Ogiltig roll vald: " + invalidRoles.join(", "));
         return;
     }
     if (selectedRoles.length < 1 || selectedRoles.length > 3) {
-        alert("V\xe4lj minst 1 och max 3 roller f\xf6r teammedlemmen.");
+        alert("V\xe4lj minst 1 och max 3 roller.");
         return;
     }
+    // Omvandla rollerna till korrekt typ ("UX", "frontend", "backend") innan vi skapar medlemmet
     const newMember = {
         id: "",
         name,
-        roles: selectedRoles
+        roles: selectedRoles.map((role)=>{
+            const roleLower = role.toLowerCase();
+            if (roleLower === "ux") return "UX"; // Vi säkerställer att det är "UX" med stora bokstäver
+            if (roleLower === "frontend") return "frontend"; // Vi håller det som "frontend"
+            if (roleLower === "backend") return "backend"; // Vi håller det som "backend"
+            return role; // Detta borde inte inträffa om validering sker korrekt
+        })
     };
     await (0, _members.createTeamMember)(newMember);
     alert("Team member added successfully!");
     document.getElementById("new-member-form")?.reset();
 }
-// Funktion för att hantera att lägga till en ny task
+// Hantera att lägga till en ny task
 async function handleAddNewTask(event) {
     event.preventDefault();
     const title = getInputValue("task-title");
     const description = getTextAreaValue("task-description");
     const status = getSelectValue("task-status");
     const assignedTo = getInputValue("task-assigned");
-    const category = getSelectValue("task-category"); // Get category from the form
+    const category = getSelectValue("task-category");
     if (!title || !description || !status || !assignedTo || !category) {
-        console.error("Alla f\xe4lt m\xe5ste fyllas i!");
         alert("Alla f\xe4lt m\xe5ste fyllas i!");
         return;
     }
-    // Trimma och konvertera kategori till små bokstäver
-    const categoryTrimmed = category?.trim().toLowerCase();
-    // Definiera de giltiga kategorierna
-    const validCategories = [
-        "UX",
-        "frontend",
-        "backend"
-    ];
-    // Kontrollera om den valda kategorin är giltig
-    if (!validCategories.includes(categoryTrimmed)) {
-        alert("Ogiltig kategori vald.");
+    // Hämta teammedlemmen för att kontrollera om de har rätt roll
+    const teamMembers = await getTeamMembers(); // Här kan du använda din egen funktion för att hämta medlemmarna från servern/databasen
+    const assignedMember = teamMembers.find((member)=>member.name === assignedTo);
+    if (!assignedMember) {
+        alert("Denna teammedlem finns inte.");
+        return;
+    }
+    // Kontrollera om medlemmen har rätt roll för uppgiftens kategori
+    if (category === "frontend" && !assignedMember.roles.includes("frontend")) {
+        alert("Denna uppgift kan inte tilldelas till denna teammedlem eftersom den inte \xe4r en frontend-utvecklare.");
+        return;
+    }
+    if (category === "backend" && !assignedMember.roles.includes("backend")) {
+        alert("Denna uppgift kan inte tilldelas till denna teammedlem eftersom den inte \xe4r en backend-utvecklare.");
+        return;
+    }
+    if (category === "UX" && !assignedMember.roles.includes("UX")) {
+        alert("Denna uppgift kan inte tilldelas till denna teammedlem eftersom den inte \xe4r en UX-designer.");
         return;
     }
     const newTask = {
@@ -702,8 +713,36 @@ async function handleAddNewTask(event) {
     (0, _board.loadBoard)();
     document.getElementById("new-task-form")?.reset();
 }
+// Simulerad funktion för att hämta alla teammedlemmar (ersätt med din egen logik om du hämtar från en databas)
+async function getTeamMembers() {
+    return [
+        {
+            id: "1",
+            name: "Liibaan",
+            roles: [
+                "frontend",
+                "UX"
+            ]
+        },
+        {
+            id: "2",
+            name: "Ali",
+            roles: [
+                "backend"
+            ]
+        },
+        {
+            id: "3",
+            name: "Ahmed",
+            roles: [
+                "UX",
+                "frontend"
+            ]
+        }
+    ];
+}
 
-},{"./modules/members":"dnJoy","./modules/board":"dCskG","./modules/tasks":"488W9"}],"dnJoy":[function(require,module,exports,__globalThis) {
+},{"./modules/members":"dnJoy","./modules/tasks":"488W9","./modules/board":"dCskG"}],"dnJoy":[function(require,module,exports,__globalThis) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 // Hämta alla teammedlemmar
@@ -731,7 +770,7 @@ async function createTeamMember(member) {
 },{"../firebase":"lvskl","firebase/database":"SJ4UY","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"lvskl":[function(require,module,exports,__globalThis) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
-// Exportera `db` för att använda i andra filer
+// Exportera `db` så du kan använda det i andra filer
 parcelHelpers.export(exports, "db", ()=>db);
 var _app = require("firebase/app");
 var _database = require("firebase/database");
@@ -748,7 +787,7 @@ const firebaseConfig = {
 };
 // Initiera Firebase
 const app = (0, _app.initializeApp)(firebaseConfig);
-// Initiera Realtime Database istället för Firestore
+// Initiera Realtime Database
 const db = (0, _database.getDatabase)(app);
 
 },{"firebase/app":"aM3Fo","firebase/database":"SJ4UY","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"aM3Fo":[function(require,module,exports,__globalThis) {
@@ -15840,119 +15879,7 @@ RepoInfo;
  * @packageDocumentation
  */ registerDatabase();
 
-},{"6b38617303e2f7b9":"d5jf4","@firebase/app":"3AcPV","@firebase/component":"bi1VB","@firebase/util":"ePiK6","@firebase/logger":"fZmft","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"dCskG":[function(require,module,exports,__globalThis) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-// Laddar och renderar Scrum Boarden
-parcelHelpers.export(exports, "loadBoard", ()=>loadBoard);
-// Renderar uppgifter i kolumner baserat på status
-parcelHelpers.export(exports, "renderTasks", ()=>renderTasks);
-var _tasks = require("./tasks");
-async function loadBoard() {
-    let tasks = await (0, _tasks.getTasks)();
-    // Hämta filter- och sorteringsvärden
-    const statusFilter = getSelectValue("filter-status");
-    const assignedFilter = getSelectValue("filter-assigned");
-    const categoryFilter = getSelectValue("filter-category");
-    const sortBy = getSelectValue("sort-by");
-    console.log("Filter:", {
-        statusFilter,
-        assignedFilter,
-        categoryFilter,
-        sortBy
-    });
-    // **Filtrering**
-    if (statusFilter && statusFilter !== "all") tasks = tasks.filter((task)=>task.status === statusFilter);
-    if (assignedFilter && assignedFilter !== "all") tasks = tasks.filter((task)=>task.assignedTo === assignedFilter);
-    if (categoryFilter && categoryFilter !== "all") tasks = tasks.filter((task)=>task.category === categoryFilter);
-    // **Sortering**
-    if (sortBy === "timestamp-newest") tasks.sort((a, b)=>new Date(b.date).getTime() - new Date(a.date).getTime());
-    else if (sortBy === "timestamp-oldest") tasks.sort((a, b)=>new Date(a.date).getTime() - new Date(b.date).getTime());
-    else if (sortBy === "title-asc") tasks.sort((a, b)=>a.title.localeCompare(b.title));
-    else if (sortBy === "title-desc") tasks.sort((a, b)=>b.title.localeCompare(a.title));
-    console.log("Filtered & sorted tasks:", tasks);
-    // Rendera uppgifter i respektive kolumn
-    renderTasks(tasks);
-}
-function renderTasks(tasks) {
-    const todoContainer = document.getElementById("tasks-to-do");
-    const inProgressContainer = document.getElementById("tasks-in-progress");
-    const doneContainer = document.getElementById("tasks-done");
-    if (!todoContainer || !inProgressContainer || !doneContainer) return;
-    // Rensa tidigare uppgifter
-    todoContainer.innerHTML = "";
-    inProgressContainer.innerHTML = "";
-    doneContainer.innerHTML = "";
-    tasks.forEach((task)=>{
-        const taskElement = createTaskElement(task);
-        // Lägg uppgiften i rätt kolumn baserat på status
-        if (task.status === "to-do") todoContainer.appendChild(taskElement);
-        else if (task.status === "in-progress") inProgressContainer.appendChild(taskElement);
-        else if (task.status === "done") doneContainer.appendChild(taskElement);
-    });
-}
-// Skapar ett HTML-element för en uppgift
-function createTaskElement(task) {
-    const taskDiv = document.createElement("div");
-    taskDiv.className = "task";
-    taskDiv.draggable = true;
-    taskDiv.dataset.taskId = task.id;
-    taskDiv.innerHTML = `
-    <h3>${task.title}</h3>
-    <p>${task.description}</p>
-    <p><strong>Assigned to:</strong> ${task.assignedTo}</p>
-    <p><strong>Category:</strong> ${task.category}</p>
-    <p><strong>Created:</strong> ${new Date(task.date).toLocaleString()}</p>
-    <div class="task-actions">
-      <button class="move-left">\u{2B05}\u{FE0F}</button>
-      <button class="move-right">\u{27A1}\u{FE0F}</button>
-      <button class="delete">\u{1F5D1}\u{FE0F}</button>
-    </div>
-  `;
-    // Event Listeners för knappar
-    taskDiv.querySelector(".move-left")?.addEventListener("click", ()=>moveTask(task, "left"));
-    taskDiv.querySelector(".move-right")?.addEventListener("click", ()=>moveTask(task, "right"));
-    taskDiv.querySelector(".delete")?.addEventListener("click", ()=>handleDeleteTask(task.id));
-    return taskDiv;
-}
-// Flyttar en uppgift mellan statuskolumnerna
-async function moveTask(task, direction) {
-    const statusOrder = [
-        "to-do",
-        "in-progress",
-        "done"
-    ];
-    let currentIndex = statusOrder.indexOf(task.status);
-    if (direction === "left" && currentIndex > 0) task.status = statusOrder[currentIndex - 1];
-    else if (direction === "right" && currentIndex < statusOrder.length - 1) task.status = statusOrder[currentIndex + 1];
-    else return; // Ingen ändring behövs
-    await (0, _tasks.updateTask)(task.id, {
-        status: task.status
-    });
-    loadBoard(); // Uppdatera boarden
-}
-// Tar bort en uppgift
-async function handleDeleteTask(taskId) {
-    if (!taskId) {
-        console.error("Fel: Task ID saknas!");
-        return;
-    }
-    const confirmDelete = confirm("\xc4r du s\xe4ker p\xe5 att du vill ta bort denna uppgift?");
-    if (!confirmDelete) return;
-    try {
-        await (0, _tasks.deleteTask)(taskId);
-        console.log(`Task med ID ${taskId} har tagits bort.`);
-        loadBoard(); // Uppdatera Scrum Board
-    } catch (error) {
-        console.error("Fel vid borttagning av task:", error);
-    }
-}
-// Hjälpfunktion för att hämta värde från select-element
-function getSelectValue(id) {
-    return document.getElementById(id)?.value || null;
-}
-
-},{"./tasks":"488W9","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"488W9":[function(require,module,exports,__globalThis) {
+},{"6b38617303e2f7b9":"d5jf4","@firebase/app":"3AcPV","@firebase/component":"bi1VB","@firebase/util":"ePiK6","@firebase/logger":"fZmft","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"488W9":[function(require,module,exports,__globalThis) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 /**
@@ -15973,10 +15900,23 @@ function getTasks() {
     return new Promise((resolve)=>{
         (0, _database.onValue)((0, _database.ref)((0, _firebase.db), "/tasks"), (snapshot)=>{
             const data = snapshot.val();
-            const tasks = data ? Object.keys(data).map((id)=>({
+            const tasks = data ? Object.keys(data).map((id)=>{
+                const task = {
                     id,
                     ...data[id]
-                })) : [];
+                };
+                // Hantera datumformat
+                if (!task.date) {
+                    console.warn(`Task ${id} saknar datum. Anv\xe4nder standardv\xe4rde.`);
+                    task.date = new Date().toISOString();
+                } else if (typeof task.date === "number") task.date = new Date(task.date).toISOString();
+                else if (task.date.toDate) task.date = task.date.toDate().toISOString();
+                else {
+                    console.error(`Ogiltigt datumformat f\xf6r task ${id}:`, task.date);
+                    task.date = new Date().toISOString();
+                }
+                return task;
+            }) : [];
             resolve(tasks);
         }, {
             onlyOnce: true
@@ -15985,12 +15925,11 @@ function getTasks() {
 }
 async function createTask(task) {
     const newTaskRef = (0, _database.push)((0, _database.ref)((0, _firebase.db), "/tasks"));
-    const taskId = newTaskRef.key; // Hämta det unika Firebase-ID:t
+    const taskId = newTaskRef.key;
     if (!taskId) {
         console.error("\u274C Kunde inte skapa task-ID!");
         return;
     }
-    // Säkerställ att alla värden är korrekt definierade
     await (0, _database.update)(newTaskRef, {
         ...task,
         id: taskId,
@@ -16007,6 +15946,110 @@ async function deleteTask(taskId) {
     console.log(`Uppgift ${taskId} borttagen`);
 }
 
-},{"firebase/database":"SJ4UY","../firebase":"lvskl","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["cAPdp","jeorp"], "jeorp", "parcelRequire94c2")
+},{"firebase/database":"SJ4UY","../firebase":"lvskl","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"dCskG":[function(require,module,exports,__globalThis) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "loadBoard", ()=>loadBoard);
+// Renderar uppgifter i respektive kolumn
+parcelHelpers.export(exports, "renderTasks", ()=>renderTasks);
+var _tasks = require("./tasks");
+async function loadBoard() {
+    let tasks = await (0, _tasks.getTasks)();
+    // Hämta filter- och sorteringsvärden
+    const statusFilter = getSelectValue("filter-status");
+    const assignedFilter = getSelectValue("filter-assigned");
+    const categoryFilter = getSelectValue("filter-category"); // Hämta kategori-filter
+    const sortBy = getSelectValue("sort-by");
+    console.log("Filter:", {
+        statusFilter,
+        assignedFilter,
+        categoryFilter,
+        sortBy
+    });
+    // **Filtrering**
+    if (statusFilter && statusFilter !== "all") tasks = tasks.filter((task)=>task.status === statusFilter);
+    // Filtrera baserat på tilldelad medlem (om valts)
+    if (assignedFilter && assignedFilter !== "all") tasks = tasks.filter((task)=>task.assignedTo === assignedFilter);
+    // Filtrera baserat på kategori (om valts)
+    if (categoryFilter && categoryFilter !== "all") tasks = tasks.filter((task)=>task.category === categoryFilter); // Filtrera enligt kategori
+    // **Sortering**
+    if (sortBy === "timestamp-newest") tasks.sort((a, b)=>new Date(b.date).getTime() - new Date(a.date).getTime()); // Nyast först
+    else if (sortBy === "timestamp-oldest") tasks.sort((a, b)=>new Date(a.date).getTime() - new Date(b.date).getTime()); // Äldst först
+    else if (sortBy === "title-ascending") tasks.sort((a, b)=>a.title.localeCompare(b.title)); // Stigande ordning
+    else if (sortBy === "title-descending") tasks.sort((a, b)=>b.title.localeCompare(a.title)); // Fallande ordning
+    console.log("Filtered & sorted tasks:", tasks);
+    renderTasks(tasks);
+}
+function renderTasks(tasks) {
+    const todoContainer = document.getElementById("tasks-to-do");
+    const inProgressContainer = document.getElementById("tasks-in-progress");
+    const doneContainer = document.getElementById("tasks-done");
+    if (!todoContainer || !inProgressContainer || !doneContainer) return;
+    // Töm innehållet i kolumnerna
+    todoContainer.innerHTML = "";
+    inProgressContainer.innerHTML = "";
+    doneContainer.innerHTML = "";
+    // Loopar över alla uppgifter och lägger till dem i rätt kolumn
+    tasks.forEach((task)=>{
+        const taskElement = createTaskElement(task);
+        if (task.status === "to-do") todoContainer.appendChild(taskElement);
+        else if (task.status === "in-progress") inProgressContainer.appendChild(taskElement);
+        else if (task.status === "done") doneContainer.appendChild(taskElement);
+    });
+}
+// Skapar HTML-element för en uppgift
+function createTaskElement(task) {
+    const taskDiv = document.createElement("div");
+    taskDiv.className = "task";
+    taskDiv.draggable = true;
+    taskDiv.dataset.taskId = task.id;
+    // Skapa HTML-struktur för uppgiften
+    taskDiv.innerHTML = `
+    <h3>${task.title}</h3>
+    <p>${task.description}</p>
+    <p><strong>Assigned to:</strong> ${task.assignedTo}</p>
+    <p><strong>Category:</strong> ${task.category}</p>
+    <p><strong>Created:</strong> ${new Date(task.date).toLocaleString()}</p>
+    <div class="task-actions">
+      ${task.status === "done" // Visa knappar bara om status är "done"
+     ? `<button class="done-btn">\u{2714}\u{FE0F} Markera som klar</button>
+             <button class="delete">\u{1F5D1}\u{FE0F} Ta bort</button>` : "" // Om inte "done", visa inga knappar
+    }
+    </div>
+  `;
+    // Lägg till event listeners för knapparna
+    const deleteButton = taskDiv.querySelector(".delete");
+    const doneButton = taskDiv.querySelector(".done-btn");
+    // Ta bort-knappen visas endast om uppgiften är "done"
+    if (deleteButton) deleteButton.addEventListener("click", ()=>handleDeleteTask(task.id));
+    // Markera uppgiften som "done" när användaren klickar på "✔️ Markera som klar"
+    if (doneButton) doneButton.addEventListener("click", ()=>markTaskAsDone(task));
+    return taskDiv;
+}
+// Markera uppgiften som "done" endast om den är tilldelad till en teammedlem
+async function markTaskAsDone(task) {
+    if (!task.assignedTo || task.assignedTo === "Ingen") {
+        alert("Denna uppgift kan inte markeras som klar eftersom den inte \xe4r tilldelad en teammedlem.");
+        return;
+    }
+    task.status = "done";
+    await (0, _tasks.updateTask)(task.id, {
+        status: task.status
+    });
+    loadBoard(); // Återrendera uppgifter för att uppdatera listorna
+}
+// Tar bort en uppgift
+async function handleDeleteTask(taskId) {
+    const confirmDelete = confirm("\xc4r du s\xe4ker p\xe5 att du vill ta bort denna uppgift?");
+    if (!confirmDelete) return;
+    await (0, _tasks.deleteTask)(taskId);
+    loadBoard();
+}
+// Hjälpfunktion för att hämta värde från select-element
+function getSelectValue(id) {
+    return document.getElementById(id)?.value || null;
+}
+
+},{"./tasks":"488W9","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["cAPdp","jeorp"], "jeorp", "parcelRequire94c2")
 
 //# sourceMappingURL=index.b7a05eb9.js.map

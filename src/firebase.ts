@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getDatabase } from "firebase/database";  
+import { getDatabase } from "firebase/database";
 
 // Din Firebase-konfiguration
 const firebaseConfig = {
@@ -16,9 +16,8 @@ const firebaseConfig = {
 // Initiera Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initiera Realtime Database istället för Firestore
+// Initiera Realtime Database
 const db = getDatabase(app);
 
-// Exportera `db` för att använda i andra filer
+// Exportera `db` så du kan använda det i andra filer
 export { db };
-

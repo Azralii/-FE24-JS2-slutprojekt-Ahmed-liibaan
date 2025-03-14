@@ -8,8 +8,12 @@ export interface Task {
   date: Date;
 }
 
-export interface TeamMember {
+export type TeamMember = {
   id: string;
   name: string;
-  roles: ("UX designer" | "frontend developer" | "backend developer")[]; // Roles are defined as an array of specific strings
-}
+  roles: ("UX" | "frontend" | "backend")[];
+
+};
+
+
+
