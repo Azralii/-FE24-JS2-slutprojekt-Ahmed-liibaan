@@ -1,22 +1,23 @@
 import { getTasks, updateTask, deleteTask, getMembers } from "./tasks";
 import { Task } from "../types";
 
+// Laddar uppgifter och renderar dem på tavlan
 export async function loadBoard(): Promise<void> {
-  let tasks: Task[] = await getTasks();
-  let members = await getMembers();
+  let tasks: Task[] = await getTasks(); // Hämta alla uppgifter
+  let members = await getMembers(); // Hämta alla medlemmar för tilldelning
 
-  // Uppdatera medlemslistan i filtreringen
+  // Uppdatera dropdown-menyn med medlemmar för filtrering
   updateMemberDropdown(members);
 
-  // Hämta filter- och sorteringsvärden
+  // Hämta filter- och sorteringsvärden från användarens val
   const statusFilter = getSelectValue("filter-status");
   const assignedFilter = getSelectValue("filter-assigned");
   const categoryFilter = getSelectValue("filter-category");
   const sortBy = getSelectValue("sort-by");
 
-  console.log("Filter:", { statusFilter, assignedFilter, categoryFilter, sortBy });
+  console.log("Filter values:", { statusFilter, assignedFilter, categoryFilter, sortBy });
 
-  // **Filtrering**
+  // **Filtrering av uppgifter**
   if (statusFilter && statusFilter !== "all") {
     tasks = tasks.filter(task => task.status === statusFilter);
   }
@@ -29,7 +30,7 @@ export async function loadBoard(): Promise<void> {
     tasks = tasks.filter(task => task.category === categoryFilter);
   }
 
-  // **Sortering**
+  // **Sortering av uppgifter**
   if (sortBy === "timestamp-newest") {
     tasks.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   } else if (sortBy === "timestamp-oldest") {
@@ -41,11 +42,13 @@ export async function loadBoard(): Promise<void> {
   }
 
   console.log("Filtered & sorted tasks:", tasks);
+
+  // Rendera uppgifterna på tavlan
   renderTasks(tasks, members);
 }
 
-// Uppdaterar dropdown-menyn med medlemmar
-function updateMemberDropdown(members: { name: string }[]) {
+// Uppdaterar dropdown-menyn för att välja tilldelad medlem
+function updateMemberDropdown(members: { name: string }[]): void {
   const assignedFilter = document.getElementById("filter-assigned") as HTMLSelectElement;
   if (assignedFilter) {
     assignedFilter.innerHTML = `<option value="all">Alla</option>`;
@@ -58,7 +61,7 @@ function updateMemberDropdown(members: { name: string }[]) {
   }
 }
 
-// Renderar uppgifter i respektive kolumn
+// Renderar uppgifter i respektive kolumn: To Do, In Progress, Done
 export function renderTasks(tasks: Task[], members: { name: string }[]): void {
   const todoContainer = document.getElementById("tasks-to-do");
   const inProgressContainer = document.getElementById("tasks-in-progress");
@@ -140,13 +143,13 @@ function createTaskElement(task: Task, members: { name: string }[]): HTMLDivElem
   if (doneButton) {
     doneButton.addEventListener("click", () => markTaskAsDone(task));
   }
+
   // Markera en uppgift som klar
   async function markTaskAsDone(task: Task) {
-  task.status = "done";
-  await updateTask(task.id, { status: "done" });
-  loadBoard();
-}
-
+    task.status = "done";
+    await updateTask(task.id, { status: "done" });
+    loadBoard();
+  }
 
   // Hantera när en person väljs från dropdown-menyn
   if (assignSelect) {
@@ -154,7 +157,7 @@ function createTaskElement(task: Task, members: { name: string }[]): HTMLDivElem
       const selectedMember = (event.target as HTMLSelectElement).value;
       if (selectedMember) {
         task.assignedTo = selectedMember;
-        task.status = "in-progress";
+        task.status = "in-progress"; // Uppdatera status när tilldelningen görs
         await updateTask(task.id, { assignedTo: selectedMember, status: "in-progress" });
         loadBoard();
       }
@@ -168,6 +171,8 @@ function createTaskElement(task: Task, members: { name: string }[]): HTMLDivElem
 async function moveTask(task: Task, direction: "left" | "right") {
   const statusOrder: Task["status"][] = ["to-do", "in-progress", "done"];
   let currentIndex = statusOrder.indexOf(task.status);
+
+  console.log(`Moving task ${task.title} from ${task.status} to ${direction}`);
 
   if (direction === "right" && task.status === "to-do" && (!task.assignedTo || task.assignedTo === "Ingen")) {
     alert("Tilldela en person innan du kan flytta uppgiften till 'in-progress'.");
