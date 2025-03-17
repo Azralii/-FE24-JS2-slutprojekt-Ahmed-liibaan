@@ -113,8 +113,6 @@ function updateAssigneeFilter() {
   }
 }
 
-
-
 // Hantera att lägga till en ny task
 async function handleAddNewTask(event: Event) {
   event.preventDefault();
