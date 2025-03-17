@@ -1,8 +1,12 @@
-import { getTasks, updateTask, deleteTask } from "./tasks";
+import { getTasks, updateTask, deleteTask, getMembers } from "./tasks";
 import { Task } from "../types";
 
 export async function loadBoard(): Promise<void> {
   let tasks: Task[] = await getTasks();
+  let members = await getMembers();
+
+  // Uppdatera medlemslistan i filtreringen
+  updateMemberDropdown(members);
 
   // Hämta filter- och sorteringsvärden
   const statusFilter = getSelectValue("filter-status");
@@ -37,11 +41,25 @@ export async function loadBoard(): Promise<void> {
   }
 
   console.log("Filtered & sorted tasks:", tasks);
-  renderTasks(tasks);
+  renderTasks(tasks, members);
+}
+
+// Uppdaterar dropdown-menyn med medlemmar
+function updateMemberDropdown(members: { name: string }[]) {
+  const assignedFilter = document.getElementById("filter-assigned") as HTMLSelectElement;
+  if (assignedFilter) {
+    assignedFilter.innerHTML = `<option value="all">Alla</option>`;
+    members.forEach(member => {
+      const option = document.createElement("option");
+      option.value = member.name;
+      option.textContent = member.name;
+      assignedFilter.appendChild(option);
+    });
+  }
 }
 
 // Renderar uppgifter i respektive kolumn
-export function renderTasks(tasks: Task[]): void {
+export function renderTasks(tasks: Task[], members: { name: string }[]): void {
   const todoContainer = document.getElementById("tasks-to-do");
   const inProgressContainer = document.getElementById("tasks-in-progress");
   const doneContainer = document.getElementById("tasks-done");
@@ -53,7 +71,7 @@ export function renderTasks(tasks: Task[]): void {
   doneContainer.innerHTML = "";
 
   tasks.forEach((task) => {
-    const taskElement = createTaskElement(task);
+    const taskElement = createTaskElement(task, members);
 
     if (task.status === "to-do") {
       todoContainer.appendChild(taskElement);
@@ -66,24 +84,23 @@ export function renderTasks(tasks: Task[]): void {
 }
 
 // Skapar HTML-element för en uppgift
-function createTaskElement(task: Task): HTMLDivElement {
+function createTaskElement(task: Task, members: { name: string }[]): HTMLDivElement {
   const taskDiv = document.createElement("div");
   taskDiv.className = "task";
   taskDiv.draggable = true;
   taskDiv.dataset.taskId = task.id;
 
-  let assignedToHTML = `<p><strong>Assigned to:</strong> ${task.assignedTo}</p>`;
+  let assignedSection = `<p><strong>Assigned to:</strong> ${task.assignedTo}</p>`;
 
-  // Om uppgiften är i "to-do", visa en dropdown för att välja ansvarig person
+  // Om uppgiften är i "to-do", visa en dropdown för att välja en person
   if (task.status === "to-do") {
-    assignedToHTML = `
-      <label for="assign-${task.id}"><strong>Assign to:</strong></label>
-      <select id="assign-${task.id}" class="assign-dropdown">
-        <option value="">Välj en person</option>
-        <option value="Liibaan">Liibaan</option>
-        <option value="Ali">Ali</option>
-        <option value="Ahmed">Ahmed</option>
-      </select>
+    assignedSection = `
+      <label><strong>Assign to:</strong>
+        <select class="assign-select">
+          <option value="">Välj person</option>
+          ${members.map(member => `<option value="${member.name}">${member.name}</option>`).join("")}
+        </select>
+      </label>
     `;
   }
 
@@ -91,7 +108,7 @@ function createTaskElement(task: Task): HTMLDivElement {
   taskDiv.innerHTML = `
     <h3>${task.title}</h3>
     <p>${task.description}</p>
-    ${assignedToHTML}
+    ${assignedSection}
     <p><strong>Category:</strong> ${task.category}</p>
     <p><strong>Created:</strong> ${new Date(task.date).toLocaleString()}</p>
     <div class="task-actions">
@@ -99,8 +116,8 @@ function createTaskElement(task: Task): HTMLDivElement {
       <button class="move-right">➡️</button>
       ${task.status === "done" ? `<button class="delete">🗑️</button>` : ""}
       ${
-        task.status === "in-progress" && task.assignedTo && task.assignedTo !== "Ingen"
-          ? `<button class="done-btn">✔️ Markera som klar</button>`
+        task.status === "in-progress" && task.assignedTo && task.assignedTo !== "Ingen" 
+          ? `<button class="done-btn">✔️ Markera som klar</button>` 
           : ""
       }
     </div>
@@ -111,7 +128,7 @@ function createTaskElement(task: Task): HTMLDivElement {
   const moveRightButton = taskDiv.querySelector(".move-right") as HTMLButtonElement;
   const deleteButton = taskDiv.querySelector(".delete") as HTMLButtonElement;
   const doneButton = taskDiv.querySelector(".done-btn") as HTMLButtonElement;
-  const assignDropdown = taskDiv.querySelector(".assign-dropdown") as HTMLSelectElement;
+  const assignSelect = taskDiv.querySelector(".assign-select") as HTMLSelectElement;
 
   moveLeftButton?.addEventListener("click", () => moveTask(task, "left"));
   moveRightButton?.addEventListener("click", () => moveTask(task, "right"));
@@ -123,15 +140,22 @@ function createTaskElement(task: Task): HTMLDivElement {
   if (doneButton) {
     doneButton.addEventListener("click", () => markTaskAsDone(task));
   }
+  // Markera en uppgift som klar
+  async function markTaskAsDone(task: Task) {
+  task.status = "done";
+  await updateTask(task.id, { status: "done" });
+  loadBoard();
+}
+
 
   // Hantera när en person väljs från dropdown-menyn
-  if (assignDropdown) {
-    assignDropdown.addEventListener("change", async (event) => {
-      const selectedPerson = (event.target as HTMLSelectElement).value;
-      if (selectedPerson) {
-        task.assignedTo = selectedPerson;
-        task.status = "in-progress"; // Flytta till "in-progress"
-        await updateTask(task.id, { assignedTo: selectedPerson, status: "in-progress" });
+  if (assignSelect) {
+    assignSelect.addEventListener("change", async (event) => {
+      const selectedMember = (event.target as HTMLSelectElement).value;
+      if (selectedMember) {
+        task.assignedTo = selectedMember;
+        task.status = "in-progress";
+        await updateTask(task.id, { assignedTo: selectedMember, status: "in-progress" });
         loadBoard();
       }
     });
@@ -145,6 +169,11 @@ async function moveTask(task: Task, direction: "left" | "right") {
   const statusOrder: Task["status"][] = ["to-do", "in-progress", "done"];
   let currentIndex = statusOrder.indexOf(task.status);
 
+  if (direction === "right" && task.status === "to-do" && (!task.assignedTo || task.assignedTo === "Ingen")) {
+    alert("Tilldela en person innan du kan flytta uppgiften till 'in-progress'.");
+    return;
+  }
+
   if (direction === "left" && currentIndex > 0) {
     task.status = statusOrder[currentIndex - 1];
   } else if (direction === "right" && currentIndex < statusOrder.length - 1) {
@@ -153,18 +182,6 @@ async function moveTask(task: Task, direction: "left" | "right") {
     return;
   }
 
-  await updateTask(task.id, { status: task.status });
-  loadBoard();
-}
-
-// Markera uppgiften som "done" endast om den är i "in-progress"
-async function markTaskAsDone(task: Task) {
-  if (!task.assignedTo || task.assignedTo === "Ingen") {
-    alert("Denna uppgift kan inte markeras som klar eftersom den inte är tilldelad en teammedlem.");
-    return;
-  }
-
-  task.status = "done";
   await updateTask(task.id, { status: task.status });
   loadBoard();
 }

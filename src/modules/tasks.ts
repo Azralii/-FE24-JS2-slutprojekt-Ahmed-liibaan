@@ -69,3 +69,22 @@ export async function deleteTask(taskId: string): Promise<void> {
   await remove(taskRef);
   console.log(`Uppgift ${taskId} borttagen`);
 }
+
+/**
+ * Hämta alla medlemmar från Firebase Realtime Database.
+ */
+export function getMembers(): Promise<{ name: string }[]> {
+  return new Promise((resolve) => {
+    onValue(
+      ref(db, "/members"), // Se till att "/members" är rätt sökväg i din databas
+      (snapshot) => {
+        const data = snapshot.val();
+        const members = data
+          ? Object.keys(data).map((id) => ({ id, ...data[id] }))
+          : [];
+        resolve(members);
+      },
+      { onlyOnce: true }
+    );
+  });
+}
