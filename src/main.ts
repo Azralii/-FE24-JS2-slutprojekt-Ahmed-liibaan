@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   setupEventListener("filter-status", loadBoard);
   setupEventListener("filter-assigned", loadBoard);
+  setupEventListener("filter-category", loadBoard);
   setupEventListener("sort-by", loadBoard);
 });
 
@@ -86,8 +87,32 @@ async function handleAddNewMember(event: Event) {
 
   await createTeamMember(newMember);
   alert("Team member added successfully!");
+  updateAssigneeFilter(); // Uppdatera assignee-filter efter att en ny medlem lagts till
   (document.getElementById("new-member-form") as HTMLFormElement)?.reset();
 }
+
+function updateAssigneeFilter() {
+  const assigneeFilter = document.getElementById("filter-assigned") as HTMLSelectElement | null;
+
+  // Check if assigneeFilter exists
+  if (assigneeFilter) {
+    getTeamMembers().then((teamMembers) => {
+      // Clear the current options (ensure assigneeFilter exists first)
+      assigneeFilter.innerHTML = '<option value="all">All</option>';
+
+      // Add new options for each member
+      teamMembers.forEach((member) => {
+        const option = document.createElement("option");
+        option.value = member.name;
+        option.textContent = member.name;
+        assigneeFilter.appendChild(option);
+      });
+    });
+  } else {
+    console.warn('Filter element "filter-assigned" not found.');
+  }
+}
+
 
 // Hantera att lägga till en ny task
 async function handleAddNewTask(event: Event) {
@@ -105,7 +130,7 @@ async function handleAddNewTask(event: Event) {
   }
 
   // Hämta teammedlemmen för att kontrollera om de har rätt roll
-  const teamMembers = await getTeamMembers();  // Här kan du använda din egen funktion för att hämta medlemmarna från servern/databasen
+  const teamMembers = await getTeamMembers();
   const assignedMember = teamMembers.find(member => member.name === assignedTo);
 
   if (!assignedMember) {
