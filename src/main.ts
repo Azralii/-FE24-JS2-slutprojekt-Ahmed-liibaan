@@ -3,7 +3,6 @@ import { createTask } from "./modules/tasks";
 import { loadBoard } from "./modules/board";
 import { TeamMember, Task } from "./types";
 
-// När dokumentet har laddats klart
 document.addEventListener("DOMContentLoaded", () => {
   loadBoard();
 
@@ -13,22 +12,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const memberForm = document.getElementById("new-member-form") as HTMLFormElement | null;
   memberForm?.addEventListener("submit", handleAddNewMember);
 
-  // Setup event listeners för filter
   setupEventListener("filter-status", loadBoard);
   setupEventListener("filter-assigned", loadBoard);
   setupEventListener("filter-category", loadBoard);
   setupEventListener("sort-by", loadBoard);
-
-  // Uppdatera assignee dropdowns när sidan laddas
-  updateAssigneeDropdowns();
 });
 
-// Funktion för att skapa event listeners på olika dropdowns
 function setupEventListener(elementId: string, callback: () => void) {
   const element = document.getElementById(elementId) as HTMLSelectElement | null;
   if (element) {
     element.addEventListener("change", () => {
-      console.log(`${elementId} ändrades!`);
+      console.log(`${elementId} ändrades!`); // ✅ Logga när dropdown ändras
       callback();
     });
   } else {
@@ -36,17 +30,14 @@ function setupEventListener(elementId: string, callback: () => void) {
   }
 }
 
-// Hämta värdet från inputfält
 function getInputValue(id: string): string | null {
   return (document.getElementById(id) as HTMLInputElement | null)?.value || null;
 }
 
-// Hämta värdet från textarea
 function getTextAreaValue(id: string): string | null {
   return (document.getElementById(id) as HTMLTextAreaElement | null)?.value || null;
 }
 
-// Hämta värdet från select
 function getSelectValue(id: string): string | null {
   return (document.getElementById(id) as HTMLSelectElement | null)?.value || null;
 }
@@ -65,11 +56,11 @@ async function handleAddNewMember(event: Event) {
 
   const selectedRoles: string[] = Array.from(rolesSelect.selectedOptions).map(option => option.value);
 
-  // Definiera de giltiga rollerna
-  const validRoles = ["UX", "frontend", "backend"];
+  // Definiera de giltiga rollerna (alla små bokstäver)
+  const validRoles = ["ux", "frontend", "backend"];
 
-  // Filtrera bort ogiltiga roller
-  const invalidRoles = selectedRoles.filter(role => !validRoles.includes(role));
+  // Filtrera bort ogiltiga roller, gör både de valda rollerna och de giltiga rollerna små bokstäver
+  const invalidRoles = selectedRoles.filter(role => !validRoles.includes(role.toLowerCase()));
 
   if (invalidRoles.length > 0) {
     alert("Ogiltig roll vald: " + invalidRoles.join(", "));
@@ -81,58 +72,45 @@ async function handleAddNewMember(event: Event) {
     return;
   }
 
-  // Skapa och spara den nya medlemmen
+  // Omvandla rollerna till korrekt typ ("UX", "frontend", "backend") innan vi skapar medlemmet
   const newMember: TeamMember = {
     id: "",
     name,
-    roles: selectedRoles as ("UX" | "frontend" | "backend")[],
+    roles: selectedRoles.map(role => {
+      const roleLower = role.toLowerCase();
+      if (roleLower === "ux") return "UX";  // Vi säkerställer att det är "UX" med stora bokstäver
+      if (roleLower === "frontend") return "frontend";  // Vi håller det som "frontend"
+      if (roleLower === "backend") return "backend";  // Vi håller det som "backend"
+      return role; // Detta borde inte inträffa om validering sker korrekt
+    }) as ("UX" | "frontend" | "backend")[]  // Tvinga om typen här
   };
 
   await createTeamMember(newMember);
   alert("Team member added successfully!");
-
-  // Uppdatera dropdowns efter att en ny medlem lagts till
-  updateAssigneeDropdowns();
-
-  // Rensa formuläret
+  updateAssigneeFilter(); // Uppdatera assignee-filter efter att en ny medlem lagts till
   (document.getElementById("new-member-form") as HTMLFormElement)?.reset();
 }
 
-// Uppdatera dropdowns för assignee
-function updateAssigneeDropdowns() {
+function updateAssigneeFilter() {
   const assigneeFilter = document.getElementById("filter-assigned") as HTMLSelectElement | null;
-  const taskAssigneeDropdown = document.getElementById("task-assigned") as HTMLSelectElement | null;
 
-  if (!assigneeFilter || !taskAssigneeDropdown) {
-    console.warn('Filter elements "filter-assigned" or "task-assigned" not found.');
-    return;
-  }
+  // Check if assigneeFilter exists
+  if (assigneeFilter) {
+    getTeamMembers().then((teamMembers) => {
+      // Clear the current options (ensure assigneeFilter exists first)
+      assigneeFilter.innerHTML = '<option value="all">All</option>';
 
-  // Rensa dropdown-listorna
-  assigneeFilter.innerHTML = '<option value="all">All</option>';
-  taskAssigneeDropdown.innerHTML = "";
-
-  // Hämta teammedlemmar och uppdatera dropdowns
-  getTeamMembers().then((teamMembers) => {
-    teamMembers.forEach((member) => {
-      const option = document.createElement("option");
-      option.value = member.name;
-      option.textContent = member.name;
-
-      // Lägg till i båda dropdowns
-      assigneeFilter.appendChild(option.cloneNode(true));
-      taskAssigneeDropdown.appendChild(option);
+      // Add new options for each member (only add member's name, not roles)
+      teamMembers.forEach((member) => {
+        const option = document.createElement("option");
+        option.value = member.name;
+        option.textContent = member.name;
+        assigneeFilter.appendChild(option);
+      });
     });
-  });
-}
-
-// Simulerad funktion för att hämta alla teammedlemmar
-async function getTeamMembers(): Promise<TeamMember[]> {
-  return [
-    { id: "1", name: "Liibaan", roles: ["frontend", "UX"] },
-    { id: "2", name: "Ali", roles: ["backend"] },
-    { id: "3", name: "Ahmed", roles: ["UX", "frontend"] },
-  ];
+  } else {
+    console.warn('Filter element "filter-assigned" not found.');
+  }
 }
 
 // Hantera att lägga till en ny task
@@ -186,4 +164,13 @@ async function handleAddNewTask(event: Event) {
   await createTask(newTask);
   loadBoard();
   (document.getElementById("new-task-form") as HTMLFormElement)?.reset();
+}
+
+// Simulerad funktion för att hämta alla teammedlemmar 
+async function getTeamMembers(): Promise<TeamMember[]> {
+  return [
+    { id: "1", name: "Liibaan", roles: ["frontend", "UX"] },
+    { id: "2", name: "Ali", roles: ["backend"] },
+    { id: "3", name: "Ahmed", roles: ["UX", "frontend"] },
+  ];
 }
