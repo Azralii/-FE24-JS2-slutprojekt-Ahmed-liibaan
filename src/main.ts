@@ -100,7 +100,7 @@ function updateAssigneeFilter() {
       // Clear the current options (ensure assigneeFilter exists first)
       assigneeFilter.innerHTML = '<option value="all">All</option>';
 
-      // Add new options for each member
+      // Add new options for each member (only add member's name, not roles)
       teamMembers.forEach((member) => {
         const option = document.createElement("option");
         option.value = member.name;
@@ -112,6 +112,7 @@ function updateAssigneeFilter() {
     console.warn('Filter element "filter-assigned" not found.');
   }
 }
+
 
 
 // Hantera att lägga till en ny task
