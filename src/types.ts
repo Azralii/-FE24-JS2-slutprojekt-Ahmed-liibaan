@@ -1,19 +1,15 @@
 export interface Task {
-  category: "UX" | "frontend" | "backend";  // Specify possible categories
   id: string;
   title: string;
   description: string;
-  status: "to-do" | "in-progress" | "done";
-  assignedTo: string;
   date: Date;
+  category: "UX" | "frontend" | "backend";
+  status: "to-do" | "in-progress" | "done"; // Behövs för statusFilter
+  assignedTo: string; // Behövs för assignedFilter
 }
 
 export type TeamMember = {
   id: string;
   name: string;
-  roles: ("UX" | "frontend" | "backend")[];
-
+  roles: ("UX" | "frontend" | "backend")[]; // Minst 1, max 3
 };
-
-
-
