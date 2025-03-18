@@ -1,6 +1,7 @@
 import { getTasks, updateTask, deleteTask } from "./tasks";
 import { Task } from "../types";
 
+// Laddar uppgifter med filtrering och sortering
 export async function loadBoard(): Promise<void> {
   let tasks: Task[] = await getTasks();
 
