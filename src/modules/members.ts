@@ -5,22 +5,34 @@ import { TeamMember } from "../types";
 // Hämta alla teammedlemmar
 export async function getTeamMembers(): Promise<TeamMember[]> {
   const membersRef = ref(db, "members");
-  const snapshot = await get(membersRef);
 
-  if (!snapshot.exists()) {
-    return [];
+  try {
+    const snapshot = await get(membersRef);
+    if (!snapshot.exists()) {
+      return [];
+    }
+
+    const membersData = snapshot.val();
+    return Object.keys(membersData).map(id => ({
+      id,
+      ...membersData[id]
+    })) as TeamMember[];
+  } catch (error) {
+    console.error("Error fetching team members:", error);
+    throw new Error("Failed to load team members.");
   }
-
-  const membersData = snapshot.val();
-  return Object.keys(membersData).map(id => ({
-    id,
-    ...membersData[id]
-  })) as TeamMember[];
 }
 
 // Skapa en ny teammedlem
-export async function createTeamMember(member: TeamMember): Promise<void> {
+export async function createTeamMember(member: TeamMember): Promise<string> {
   const membersRef = ref(db, "members");
   const newMemberRef = push(membersRef);
-  await set(newMemberRef, member);
+
+  try {
+    await set(newMemberRef, member);
+    return newMemberRef.key as string; // Returnerar ID för den skapade medlemmen
+  } catch (error) {
+    console.error("Error creating team member:", error);
+    throw new Error("Failed to create team member.");
+  }
 }

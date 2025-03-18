@@ -63,9 +63,14 @@ async function handleAddNewTask(event: Event) {
     assignedTo: ""
   };
 
-  await createTask(newTask);
-  loadBoard();
-  (document.getElementById("new-task-form") as HTMLFormElement)?.reset();
+  try {
+    await createTask(newTask);
+    loadBoard();
+    (document.getElementById("new-task-form") as HTMLFormElement)?.reset();
+  } catch (error) {
+    console.error("Fel vid skapande av uppgift:", error);
+    alert("Det uppstod ett fel vid skapande av uppgift. Försök igen.");
+  }
 }
 
 // Hantera att lägga till en ny team member
@@ -106,7 +111,12 @@ async function handleAddNewMember(event: Event) {
     }) as ("UX" | "frontend" | "backend")[]
   };
 
-  await createTeamMember(newMember);
-  alert("Team member added successfully!");
-  (document.getElementById("new-member-form") as HTMLFormElement)?.reset();
+  try {
+    await createTeamMember(newMember);
+    alert("Team member added successfully!");
+    (document.getElementById("new-member-form") as HTMLFormElement)?.reset();
+  } catch (error) {
+    console.error("Fel vid skapande av teammedlem:", error);
+    alert("Det uppstod ett fel vid skapande av teammedlem. Försök igen.");
+  }
 }
