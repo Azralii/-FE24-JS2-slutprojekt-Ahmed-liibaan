@@ -5,17 +5,18 @@ export async function loadBoard(): Promise<void> {
   let tasks: Task[] = await getTasks();
 
   // Hämta filter- och sorteringsvärden
-  const statusFilter = getSelectValue("filter-status");
+//  const statusFilter = getSelectValue("filter-person");
   const assignedFilter = getSelectValue("filter-assigned");
   const categoryFilter = getSelectValue("filter-category");
   const sortBy = getSelectValue("sort-by");
 
-  console.log("Filter:", { statusFilter, assignedFilter, categoryFilter, sortBy });
+//  console.log("Filter:", { statusFilter, assignedFilter, categoryFilter, sortBy });
+  console.log("Filter:", {  assignedFilter, categoryFilter, sortBy });
 
   // **Filtrering**
-  if (statusFilter && statusFilter !== "all") {
+  /*if (statusFilter && statusFilter !== "all") {
     tasks = tasks.filter(task => task.status === statusFilter);
-  }
+  }*/
 
   if (assignedFilter && assignedFilter !== "all") {
     tasks = tasks.filter(task => task.assignedTo === assignedFilter);

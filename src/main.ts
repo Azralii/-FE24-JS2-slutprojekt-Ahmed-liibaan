@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const memberForm = document.getElementById("new-member-form") as HTMLFormElement | null;
   memberForm?.addEventListener("submit", handleAddNewMember);
 
+  setupEventListener("filter-assigned", loadBoard);
   setupEventListener("filter-category", loadBoard);
   setupEventListener("sort-by", loadBoard);
 });
