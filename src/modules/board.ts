@@ -1,7 +1,6 @@
 import { getTasks, updateTask, deleteTask } from "./tasks";
 import { Task } from "../types";
 
-// Laddar uppgifter med filtrering och sortering
 export async function loadBoard(): Promise<void> {
   let tasks: Task[] = await getTasks();
 
@@ -14,17 +13,14 @@ export async function loadBoard(): Promise<void> {
   console.log("Filter:", { statusFilter, assignedFilter, categoryFilter, sortBy });
 
   // **Filtrering**
-  // Filtrera efter status
   if (statusFilter && statusFilter !== "all") {
     tasks = tasks.filter(task => task.status === statusFilter);
   }
 
-  // Filtrera efter tilldelad person
   if (assignedFilter && assignedFilter !== "all") {
     tasks = tasks.filter(task => task.assignedTo === assignedFilter);
   }
 
-  // Filtrera efter kategori
   if (categoryFilter && categoryFilter !== "all") {
     tasks = tasks.filter(task => task.category === categoryFilter);
   }
@@ -80,14 +76,15 @@ function createTaskElement(task: Task): HTMLDivElement {
 
   // Om uppgiften är i "to-do", visa en dropdown för att välja ansvarig person
   if (task.status === "to-do") {
-    assignedToHTML = 
-      `<label for="assign-${task.id}"><strong>Assign to:</strong></label>
+    assignedToHTML = `
+      <label for="assign-${task.id}"><strong>Assign to:</strong></label>
       <select id="assign-${task.id}" class="assign-dropdown">
         <option value="">Välj en person</option>
         <option value="Liibaan">Liibaan</option>
         <option value="Ali">Ali</option>
         <option value="Ahmed">Ahmed</option>
-      </select>`;
+      </select>
+    `;
   }
 
   // Skapa HTML-struktur för uppgiften
