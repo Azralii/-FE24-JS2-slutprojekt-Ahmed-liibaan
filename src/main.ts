@@ -1,23 +1,42 @@
-import { createTeamMember } from "./modules/members";
+import { createTeamMember,getTeamMembers } from "./modules/members";
 import { createTask } from "./modules/tasks";
 import { loadBoard } from "./modules/board";
 import { TeamMember, Task } from "./types";
 
 document.addEventListener("DOMContentLoaded", () => {
   loadBoard();
-
+  getMembersAndLoadOptions();
   const taskForm = document.getElementById("new-task-form") as HTMLFormElement | null;
   taskForm?.addEventListener("submit", handleAddNewTask);
 
   const memberForm = document.getElementById("new-member-form") as HTMLFormElement | null;
   memberForm?.addEventListener("submit", handleAddNewMember);
-
   setupEventListener("filter-assigned", loadBoard);
   setupEventListener("filter-category", loadBoard);
   setupEventListener("sort-by", loadBoard);
 });
 
+async function getMembersAndLoadOptions() {
+  console.log("test");
+  
+    console.log(await getTeamMembers());
+    var memberArray =   await getTeamMembers();
+   await memberArray.forEach(m => {
+    console.log(m.name);
+    let optionDOM= document.createElement("option");
+optionDOM.value=m.name;
+optionDOM.innerText=m.name;
+    document.getElementById("filter-assigned")?.appendChild( optionDOM)
+    });
+  
+
+
+}
+
+
 function setupEventListener(elementId: string, callback: () => void) {
+  
+
   const element = document.getElementById(elementId) as HTMLSelectElement | null;
   if (element) {
     element.addEventListener("change", () => {

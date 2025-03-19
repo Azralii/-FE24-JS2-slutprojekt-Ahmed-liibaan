@@ -1,4 +1,6 @@
 import { getTasks, updateTask, deleteTask } from "./tasks";
+import { getTeamMembers } from "./members";
+
 import { Task } from "../types";
 
 export async function loadBoard(): Promise<void> {
@@ -53,11 +55,11 @@ export function renderTasks(tasks: Task[]): void {
   inProgressContainer.innerHTML = "";
   doneContainer.innerHTML = "";
 
-  tasks.forEach((task) => {
-    const taskElement = createTaskElement(task);
+   tasks.forEach(async(task) => {
+    const taskElement = await createTaskElement(task);
 
     if (task.status === "to-do") {
-      todoContainer.appendChild(taskElement);
+      todoContainer.appendChild( taskElement);
     } else if (task.status === "in-progress") {
       inProgressContainer.appendChild(taskElement);
     } else if (task.status === "done") {
@@ -67,26 +69,45 @@ export function renderTasks(tasks: Task[]): void {
 }
 
 // Skapar HTML-element för en uppgift
-function createTaskElement(task: Task): HTMLDivElement {
+async function createTaskElement(task: Task): Promise<HTMLDivElement> {
   const taskDiv = document.createElement("div");
   taskDiv.className = "task";
   taskDiv.draggable = true;
   taskDiv.dataset.taskId = task.id;
 
   let assignedToHTML = `<p><strong>Assigned to:</strong> ${task.assignedTo}</p>`;
+  let allMemberString = ""
+ 
+
+  async function getMembersAndLoadOptions(): Promise<String> {
+
+      var members = await getTeamMembers();
+      await members.forEach(m => {
+        allMemberString += " <option value="+m.name+">"+m.name+"</option> \n "
+        });
+      return allMemberString
+  }
+
+await getMembersAndLoadOptions()
+//await console.log(allMemberString);
+await createSelectDropdown( allMemberString );
+
 
   // Om uppgiften är i "to-do", visa en dropdown för att välja ansvarig person
-  if (task.status === "to-do") {
-    assignedToHTML = `
-      <label for="assign-${task.id}"><strong>Assign to:</strong></label>
-      <select id="assign-${task.id}" class="assign-dropdown">
-        <option value="">Välj en person</option>
-        <option value="Liibaan">Liibaan</option>
-        <option value="Ali">Ali</option>
-        <option value="Ahmed">Ahmed</option>
-      </select>
-    `;
+  
+  async function createSelectDropdown(allaOptions:String) {
+    if (task.status === "to-do") {
+      assignedToHTML = `
+        <label for="assign-${task.id}"><strong>Assign to:</strong></label>
+        <select id="assign-${task.id}" class="assign-dropdown">
+          <option value="">Välj en person</option>
+         ${ allaOptions  }
+        </select>
+      `;
+    }    
   }
+
+
 
   // Skapa HTML-struktur för uppgiften
   taskDiv.innerHTML = `

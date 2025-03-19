@@ -16,6 +16,7 @@ export async function getTeamMembers(): Promise<TeamMember[]> {
     id,
     ...membersData[id]
   })) as TeamMember[];
+  return membersData;
 }
 
 // Skapa en ny teammedlem
@@ -24,3 +25,6 @@ export async function createTeamMember(member: TeamMember): Promise<void> {
   const newMemberRef = push(membersRef);
   await set(newMemberRef, member);
 }
+
+
+
