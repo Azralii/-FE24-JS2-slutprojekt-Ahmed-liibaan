@@ -117,8 +117,7 @@ await createSelectDropdown( allMemberString );
     <p><strong>Category:</strong> ${task.category}</p>
     <p><strong>Created:</strong> ${new Date(task.date).toLocaleString()}</p>
     <div class="task-actions">
-      <button class="move-left">⬅️</button>
-      <button class="move-right">➡️</button>
+
       ${task.status === "done" ? `<button class="delete">🗑️</button>` : ""}
       ${
         task.status === "in-progress" && task.assignedTo && task.assignedTo !== "Ingen"
