@@ -1,4 +1,4 @@
-import { getTasks, updateTask, deleteTask } from "./tasks";
+import { getTasks, updateTask, deleteTask, assignTask } from "./tasks";
 import { getTeamMembers } from "./members";
 
 import { Task } from "../types";
@@ -145,15 +145,18 @@ await createSelectDropdown( allMemberString );
     doneButton.addEventListener("click", () => markTaskAsDone(task));
   }
 
-  // Hantera när en person väljs från dropdown-menyn
+  // Hantera tilldelning av uppgift
   if (assignDropdown) {
     assignDropdown.addEventListener("change", async (event) => {
       const selectedPerson = (event.target as HTMLSelectElement).value;
       if (selectedPerson) {
-        task.assignedTo = selectedPerson;
-        task.status = "in-progress"; // Flytta till "in-progress"
-        await updateTask(task.id, { assignedTo: selectedPerson, status: "in-progress" });
-        loadBoard();
+        const success = await assignTask(task.id, selectedPerson, task.category);
+        if (!success) {
+          alert(`Denna uppgift kräver en ${task.category}-utvecklare!`);
+          assignDropdown.value = ""; // Återställ dropdown
+        } else {
+          loadBoard(); // Uppdatera UI
+        }
       }
     });
   }

@@ -73,7 +73,9 @@ export async function deleteTask(taskId: string): Promise<void> {
 /**
  * Hämta alla medlemmar från Firebase Realtime Database.
  */
-export function getMembers(): Promise<{ name: string }[]> {
+export function getMembers(): Promise<{
+  roles: any; name: string 
+}[]> {
   return new Promise((resolve) => {
     onValue(
       ref(db, "/members"), // Se till att "/members" är rätt sökväg i din databas
@@ -87,4 +89,18 @@ export function getMembers(): Promise<{ name: string }[]> {
       { onlyOnce: true }
     );
   });
+}
+/**
+ * Tilldela en uppgift till en användare och uppdatera status.
+ */
+ export async function assignTask(taskId: string, assignedTo: string, category: string): Promise<boolean> {
+  const members = await getMembers();
+  const selectedMember = members.find(m => m.name === assignedTo);
+
+  if (selectedMember && selectedMember.roles.includes(category)) {
+    await updateTask(taskId, { assignedTo, status: "in-progress" });
+    return true;
+  } else {
+    return false;
+  }
 }
