@@ -12,11 +12,18 @@ export async function getTeamMembers(): Promise<TeamMember[]> {
   }
 
   const membersData = snapshot.val();
-  return Object.keys(membersData).map(id => ({
-    id,
-    ...membersData[id]
-  })) as TeamMember[];
-  return membersData;
+  return Object.keys(membersData).map(id => {
+    const memberData = membersData[id];
+
+    // Se till att roles är en array, annars sätt den till en tom array
+    const roles: ("UX" | "frontend" | "backend")[] = Array.isArray(memberData.roles) ? memberData.roles : [];
+
+    return {
+      id,
+      name: memberData.name,
+      roles // Hantera rollen som en array
+    };
+  }) as TeamMember[];
 }
 
 // Skapa en ny teammedlem
@@ -25,6 +32,3 @@ export async function createTeamMember(member: TeamMember): Promise<void> {
   const newMemberRef = push(membersRef);
   await set(newMemberRef, member);
 }
-
-
-
